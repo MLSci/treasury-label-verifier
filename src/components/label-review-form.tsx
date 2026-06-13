@@ -11,7 +11,7 @@ import { TextPreview } from "@/components/text-preview";
 const DEFAULT_WARNING =
   "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.";
 
-const initialData: ApplicationData = {
+const bourbonSample: ApplicationData = {
   brandName: "OLD TOM DISTILLERY",
   classType: "Kentucky Straight Bourbon Whiskey",
   alcoholContent: "45% Alc./Vol.",
@@ -22,9 +22,31 @@ const initialData: ApplicationData = {
   governmentWarning: DEFAULT_WARNING,
 };
 
+const beerSample: ApplicationData = {
+  brandName: "MALT & HOP BREWERY",
+  classType: "Ale with honey and Huckleberry flavor",
+  alcoholContent: "5% Alc./Vol.",
+  proof: "",
+  netContents: "1 Pint",
+  producer: "Hyattsville, MD",
+  countryOfOrigin: "United States",
+  governmentWarning: DEFAULT_WARNING,
+};
+
+const fieldLabels: Record<keyof ApplicationData, string> = {
+  brandName: "Brand Name",
+  classType: "Class / Type",
+  alcoholContent: "Alcohol Content",
+  proof: "Proof",
+  netContents: "Net Contents",
+  producer: "Producer / Bottler",
+  countryOfOrigin: "Country of Origin",
+  governmentWarning: "Government Warning",
+};
+
 export function LabelReviewForm() {
   const [file, setFile] = useState<File | null>(null);
-  const [application, setApplication] = useState<ApplicationData>(initialData);
+  const [application, setApplication] = useState<ApplicationData>(beerSample);
   const [ocrText, setOcrText] = useState("");
   const [results, setResults] = useState<FieldComparison[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,21 +89,30 @@ export function LabelReviewForm() {
       </div>
 
       <div className="rounded-xl border p-6 shadow-sm bg-white">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="text-xl font-semibold">Application Data</h2>
-          <button
-            type="button"
-            onClick={() => setApplication(initialData)}
-            className="rounded-md border px-3 py-2 text-sm"
-          >
-            Load Sample Data
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setApplication(beerSample)}
+              className="rounded-md border px-3 py-2 text-sm"
+            >
+              Load Beer Sample
+            </button>
+            <button
+              type="button"
+              onClick={() => setApplication(bourbonSample)}
+              className="rounded-md border px-3 py-2 text-sm"
+            >
+              Load Bourbon Sample
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           {Object.entries(application).map(([key, value]) => (
             <label key={key} className="grid gap-1 text-sm">
-              <span className="font-medium">{key}</span>
+              <span className="font-medium">{fieldLabels[key as keyof ApplicationData]}</span>
               <input
                 value={value}
                 onChange={(e) => updateField(key as keyof ApplicationData, e.target.value)}
