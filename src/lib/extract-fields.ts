@@ -17,12 +17,32 @@ function findWarningBlock(rawText: string): string {
 
   if (startIndex === -1) return "";
 
-  return lines.slice(startIndex, Math.min(startIndex + 8, lines.length)).join(" ");
+  return lines.slice(startIndex, Math.min(startIndex + 10, lines.length)).join(" ");
+}
+
+function findBestLineByKeywords(rawText: string, keywords: string[]): string {
+  const lines = getLines(rawText);
+  let bestLine = "";
+  let bestScore = 0;
+
+  for (const line of lines) {
+    const normalized = line.toLowerCase();
+    const score = keywords.filter((keyword) => normalized.includes(keyword.toLowerCase())).length;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestLine = line;
+    }
+  }
+
+  return bestScore > 0 ? bestLine : "";
 }
 
 export function extractFields(rawText: string): ExtractedLabelData {
+  const lines = getLines(rawText);
+
   const alcoholMatch =
-    rawText.match(/(\d{1,2}(?:\.\d+)?)\s*%\s*(?:alc|aic)[^\n]{0,12}(?:vol)?/i) ||
+    rawText.match(/(\d{1,2}(?:\.\d+)?)\s*%\s*(?:alc|aic|abv)?[^\n]{0,12}(?:vol)?/i) ||
     rawText.match(/(\d{1,2}(?:\.\d+)?)\s*%/i);
 
   const proofMatch = rawText.match(/(\d{1,3})\s*Proof/i);
@@ -39,20 +59,25 @@ export function extractFields(rawText: string): ExtractedLabelData {
     findLine(rawText, /\b(united states|usa|france|italy|mexico|canada|scotland|ireland|japan)\b/i);
 
   const classTypeLine =
+    findBestLineByKeywords(rawText, ["ale", "honey", "huckleberry", "flavor"]) ||
     findLine(rawText, /\b(whiskey|whisky|bourbon|vodka|rum|tequila|gin|wine|beer|ale|lager|stout|porter|cider)\b/i);
 
   const brandLine =
+    findBestLineByKeywords(rawText, ["malt", "hop", "brewery", "distillery"]) ||
     findLine(rawText, /\b(brewery|distillery|cellars|vineyards)\b/i) ||
-    getLines(rawText).find((line) => /^[A-Z&\s]{6,}$/.test(line)) ||
+    lines.find((line) => /^[A-Z&\s]{6,}$/.test(line)) ||
     "";
+
+  const alcoholLine = lines.find((line) => /\d{1,2}(?:\.\d+)?\s*%/.test(line)) || "";
+  const netContentsLine = lines.find((line) => /\b(pint|ml|fl\.?\s*oz|oz)\b/i.test(line)) || "";
 
   return {
     rawText,
     brandName: brandLine,
     classType: classTypeLine,
-    alcoholContent: alcoholMatch ? `${alcoholMatch[1]}% Alc./Vol.` : "",
+    alcoholContent: alcoholMatch ? `${alcoholMatch[1]}% Alc./Vol.` : alcoholLine,
     proof: proofMatch ? `${proofMatch[1]} Proof` : "",
-    netContents: netContentsMatch ? `${netContentsMatch[1]} ${netContentsMatch[2]}` : "",
+    netContents: netContentsMatch ? `${netContentsMatch[1]} ${netContentsMatch[2]}` : netContentsLine,
     producer: producerLine,
     countryOfOrigin: countryLine,
     governmentWarning: findWarningBlock(rawText),
